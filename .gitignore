@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.DS_Store
+app.tar.gz
+
+.env
+.env.*
+!.env.example
+
+apps/pocketbase/pb_data/
+apps/pocketbase/data/
+apps/pocketbase/pb_hooks/*.pb.js.map

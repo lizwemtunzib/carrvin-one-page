@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png"
+    href="https://horizons-cdn.hostinger.com/b02ff131-21a4-468e-b0f1-523542a0597f/b62a4358abb45ca31eabebc28c47bf71.png" />
+  <meta name="generator" content="Hostinger Horizons" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CarrVin - The Future of Vehicle Security</title>
+
+  <!-- SPA Redirect Handler -->
+  <script>
+    (function() {
+      var redirect = sessionStorage.getItem('spa_redirect');
+      if (redirect) {
+        sessionStorage.removeItem('spa_redirect');
+        window.history.replaceState(null, null, redirect);
+      }
+    })();
+  </script>
+
+  <!-- MailerLite Universal -->
+  <script>
+    (function(w,d,e,u,f,l,n){w[f]=w[f]||function(){(w[f].q=w[f].q||[]).push(arguments);},l=d.createElement(e),l.async=1,l.src=u,n=d.getElementsByTagName(e)[0],n.parentNode.insertBefore(l,n);})(window,document,'script','https://assets.mailerlite.com/js/universal.js','ml');
+    ml('account', '2121841');
+  </script>
+  <!-- End MailerLite Universal -->
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-HKL3V4HX2N"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-HKL3V4HX2N', {
+      send_page_view: true,
+      cookie_flags: 'SameSite=None;Secure'
+    });
+  </script>
+  <!-- End Google Analytics -->
+
+  <!-- Carrvin Platform Tracking -->
+  <script>
+    (function() {
+
+      // 1. Persist UTM params through the session so they survive SPA navigation
+      var params = new URLSearchParams(window.location.search);
+      var utmKeys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+      utmKeys.forEach(function(k) {
+        var v = params.get(k);
+        if (v) sessionStorage.setItem('cv_' + k, v);
+      });
+
+      // 2. Helper to read stored UTM values
+      window.cvGetUtm = function() {
+        var utm = {};
+        utmKeys.forEach(function(k) {
+          utm[k] = sessionStorage.getItem('cv_' + k) || '(none)';
+        });
+        return utm;
+      };
+
+      // 3. Track waitlist sign-up as a GA4 conversion event
+      //    Call window.cvTrackSignup() from your EarlyAccessForm.jsx or
+      //    WaitlistSection.jsx on successful form submission
+      window.cvTrackSignup = function(email) {
+        var utm = window.cvGetUtm();
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'waitlist_signup', {
+            event_category: 'conversion',
+            utm_source:   utm.utm_source,
+            utm_medium:   utm.utm_medium,
+            utm_campaign: utm.utm_campaign,
+            page_location: window.location.href
+          });
+        }
+        // Also fire MailerLite conversion if available
+        if (typeof ml !== 'undefined') {
+          ml('track', 'waitlist_signup');
+        }
+      };
+
+      // 4. Track PDF download as a GA4 event
+      window.cvTrackPdfDownload = function() {
+        var utm = window.cvGetUtm();
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'pdf_download', {
+            event_category: 'lead_magnet',
+            utm_source:   utm.utm_source,
+            utm_medium:   utm.utm_medium,
+            utm_campaign: utm.utm_campaign
+          });
+        }
+      };
+
+      // 5. Track outbound clicks (social links, app store links etc.)
+      document.addEventListener('click', function(e) {
+        var a = e.target.closest('a');
+        if (a && a.href && a.hostname !== window.location.hostname) {
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'outbound_click', {
+              event_category: 'engagement',
+              link_url: a.href,
+              link_text: (a.innerText || '').trim().substring(0, 50)
+            });
+          }
+        }
+      });
+
+      // 6. Track scroll depth (25%, 50%, 75%, 100%)
+      var scrollMarks = {25:false, 50:false, 75:false, 100:false};
+      window.addEventListener('scroll', function() {
+        var scrolled = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
+        [25,50,75,100].forEach(function(mark) {
+          if (!scrollMarks[mark] && scrolled >= mark) {
+            scrollMarks[mark] = true;
+            if (typeof gtag !== 'undefined') {
+              gtag('event', 'scroll_depth', {
+                event_category: 'engagement',
+                depth_percentage: mark
+              });
+            }
+          }
+        });
+      }, {passive: true});
+
+    })();
+  </script>
+  <!-- End Carrvin Platform Tracking -->
+
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

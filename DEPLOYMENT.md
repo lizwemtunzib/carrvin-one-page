@@ -55,7 +55,7 @@ If you later remove the blog sync workflow, `POCKETBASE_DEV_URL` and `POCKETBASE
 
 - Project root: `apps/web`
 - Build command: `npm run build`
-- Output directory: `../../dist/apps/web`
+- Output directory: `dist`
 
 Environment variables:
 

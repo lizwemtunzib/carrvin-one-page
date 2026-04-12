@@ -134,7 +134,7 @@ const AppContent = () => {
           path="/14-ways"
           element={
             <PDFDownloadPage
-              recordId="lfne4hm6l5u16ne"
+              recordId="oqwpnj0947iz1ys"
               pageTitle="14 Ways Your Car Can Be Stolen"
               pageDescription="From hotwiring to CAN bus injection — the complete threat landscape every driver must understand."
               downloadFileName="CarrVin-14-Ways-Report.pdf"

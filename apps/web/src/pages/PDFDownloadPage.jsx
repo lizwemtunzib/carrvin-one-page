@@ -11,7 +11,7 @@ const inputClass = "w-full px-4 py-3 bg-white border border-gray-200 rounded-xl 
 const PDFDownloadPage = ({
   pdfUrl = "/pdfs/carrvin-pocket-guide.pdf",
   pageTitle = "The CarrVin Vehicle Security Report",
-  pageDescription = "What organised theft networks actually do — and what existing security cannot stop. Enter your details below to download instantly.",
+  pageDescription = "What organised theft networks actually do � and what existing security cannot stop. Enter your details below to download instantly.",
   downloadFileName = "CarrVin-Vehicle-Security-Report.pdf",
   mailerliteGroupId = "180840110108968144",
   mailerliteSource = "pdf_download_page",
@@ -37,41 +37,40 @@ const PDFDownloadPage = ({
   };
 
   const downloadPDF = async () => {
-  try {
-    const fullUrl = pdfUrl.startsWith('http')
-      ? pdfUrl
-      : `${window.location.origin}${pdfUrl}`;
+    try {
+      const fullUrl = pdfUrl.startsWith('http')
+        ? pdfUrl
+        : `${window.location.origin}${pdfUrl}`;
 
-    const pdfWindow = window.open(fullUrl, '_blank');
+      const pdfWindow = window.open(fullUrl, '_blank');
 
-    if (!pdfWindow || pdfWindow.closed || typeof pdfWindow.closed === 'undefined') {
-      const response = await fetch(fullUrl);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = downloadFileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
+      if (!pdfWindow || pdfWindow.closed || typeof pdfWindow.closed === 'undefined') {
+        const response = await fetch(fullUrl);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = downloadFileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }
+
+      return fullUrl;
+    } catch (err) {
+      console.error('Download error:', err);
+      setShowManualDownload(true);
+      setManualDownloadUrl(pdfUrl.startsWith('http') ? pdfUrl : `${window.location.origin}${pdfUrl}`);
+      throw err;
     }
+  };
 
-    return fullUrl;
-  } catch (err) {
-    console.error('❌ Download error:', err);
-    setShowManualDownload(true);
-    setManualDownloadUrl(pdfUrl.startsWith('http') ? pdfUrl : `${window.location.origin}${pdfUrl}`);
-    throw err;
-  }
-};
-
-  const forceDownload = async (pdfUrl, fileName) => {
+  const forceDownload = async (url, fileName) => {
     try {
       setShowManualDownload(false);
       setIsLoading(true);
-      setError('⏳ Preparing download...');
-      const response = await fetch(pdfUrl);
+      const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -81,12 +80,11 @@ const PDFDownloadPage = ({
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-      setError('');
       setIsLoading(false);
       return true;
     } catch (error) {
-      console.error("Force download failed:", error);
-      setError('❌ Download failed. Please try again.');
+      console.error('Force download failed:', error);
+      setError('Download failed. Please try again.');
       setIsLoading(false);
       return false;
     }
@@ -105,7 +103,6 @@ const PDFDownloadPage = ({
     if (!formData.name.trim()) { setNameError('Full Name is required.'); isValid = false; }
     if (!formData.email.trim()) { setEmailError('Email Address is required.'); isValid = false; }
     else if (!validateEmail(formData.email)) { setEmailError('Please enter a valid email address.'); isValid = false; }
-    // CHANGE 2: Validate consent instead of hardcoding true
     if (!formData.consent) { setConsentError('You must agree to the privacy policy to continue.'); isValid = false; }
     if (!isValid) return;
 
@@ -121,7 +118,7 @@ const PDFDownloadPage = ({
           downloaded_at: new Date().toISOString()
         }, { $autoCancel: false });
       } catch (pbError) {
-        console.log('⚠️ PocketBase save failed (non-fatal):', pbError);
+        console.log('PocketBase save failed (non-fatal):', pbError);
       }
 
       try {
@@ -138,16 +135,15 @@ const PDFDownloadPage = ({
           })
         });
         const subResult = await subResponse.json();
-        console.log('✅ MailerLite subscribe result:', subResult);
+        console.log('MailerLite subscribe result:', subResult);
       } catch (subError) {
-        console.log('⚠️ MailerLite subscription failed (non-fatal):', subError);
+        console.log('MailerLite subscription failed (non-fatal):', subError);
       }
 
       await downloadPDF();
-
       setShowSuccessMessage(true);
     } catch (err) {
-      console.error('❌ Error processing request:', err);
+      console.error('Error processing request:', err);
       setError('Failed to process your request. Please try again.');
     } finally {
       setIsLoading(false);
@@ -157,7 +153,7 @@ const PDFDownloadPage = ({
   return (
     <div className="min-h-screen bg-[#F8F6F0] text-gray-900">
       <Helmet>
-        <title>{pageTitle} — CarrVin</title>
+        <title>{pageTitle} � CarrVin</title>
         <meta name="description" content={pageDescription} />
       </Helmet>
 
@@ -177,7 +173,6 @@ const PDFDownloadPage = ({
             <p className="text-gray-600 text-lg">
               {pageDescription}
             </p>
-
             <p className="text-gray-700 text-base mt-3 font-medium">
               Most drivers only know 2 or 3 of these theft methods.
             </p>
@@ -233,8 +228,6 @@ const PDFDownloadPage = ({
                   autoComplete="off"
                   className={inputClass}
                 />
-
-                {/* CHANGE 2: Consent checkbox added */}
                 <div className="flex items-start gap-3 pt-1">
                   <div className="relative flex items-center mt-0.5">
                     <input
@@ -260,7 +253,6 @@ const PDFDownloadPage = ({
                     <AlertCircle className="w-4 h-4 flex-shrink-0" /> {consentError}
                   </p>
                 )}
-
                 {error && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -271,7 +263,6 @@ const PDFDownloadPage = ({
                     <p>{error}</p>
                   </motion.div>
                 )}
-
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -285,7 +276,7 @@ const PDFDownloadPage = ({
                 </button>
               </form>
               <p className="text-xs text-gray-400 mt-4 text-center">
-                ℹ️ If PDF does not open, check if pop-ups are blocked and allow them for this site.
+                If PDF does not open, check if pop-ups are blocked and allow them for this site.
               </p>
             </motion.div>
           ) : (
@@ -298,14 +289,11 @@ const PDFDownloadPage = ({
                 <CheckCircle2 className="w-8 h-8 text-amber-700" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">You Are Now Informed.</h3>
-              {/* CHANGE 3: "among the few who understand exactly" → "better informed about how modern vehicle theft actually works" */}
-              {/* CHANGE 1: "CarrVin is building the solution" → "CarrVin is building for what exists now" */}
               <p className="text-gray-600 mb-4">
                 Your report is opening now. You are now better informed about how modern vehicle theft
-                actually works — and what existing security cannot stop.
+                actually works � and what existing security cannot stop.
                 CarrVin is building for what exists now.
               </p>
-
               {showManualDownload && (
                 <div className="bg-amber-700/5 border border-amber-700/20 rounded-lg p-4 mb-4">
                   <p className="text-amber-700 mb-2 flex items-center justify-center gap-2">
@@ -317,11 +305,10 @@ const PDFDownloadPage = ({
                     disabled={isLoading}
                     className="bg-gradient-to-r from-amber-700 to-yellow-600 text-white font-bold py-3 px-6 rounded-lg transition-all hover:shadow-lg hover:shadow-amber-700/20 disabled:opacity-50"
                   >
-                    {isLoading ? 'Downloading...' : '📥 Click Here to Download Manually'}
+                    {isLoading ? 'Downloading...' : 'Click Here to Download Manually'}
                   </button>
                 </div>
               )}
-
               <p className="text-amber-700 mb-4">
                 Follow the latest at{' '}
                 <a href="https://carrvin.com" className="underline font-bold text-amber-800">
@@ -353,4 +340,3 @@ const PDFDownloadPage = ({
 };
 
 export default PDFDownloadPage;
-

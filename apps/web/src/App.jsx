@@ -128,13 +128,13 @@ const AppContent = () => {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/insights" element={<BlogListPage />} />
         <Route path="/insights/:slug" element={<BlogPostPage />} />
-        <Route path="/download-pdf" element={<PDFDownloadPage />} />
+        <Route path="/download-pdf" element={<PDFDownloadPage pdfUrl="/pdfs/carrvin-pocket-guide.pdf" />} />
         <Route path="/confirm-pdf/:token" element={<PDFConfirmationPage />} />
         <Route
           path="/14-ways"
           element={
             <PDFDownloadPage
-              recordId="oqwpnj0947iz1ys"
+              pdfUrl="/pdfs/carrvin-14-ways.pdf"
               pageTitle="14 Ways Your Car Can Be Stolen"
               pageDescription="From hotwiring to CAN bus injection — the complete threat landscape every driver must understand."
               downloadFileName="CarrVin-14-Ways-Report.pdf"

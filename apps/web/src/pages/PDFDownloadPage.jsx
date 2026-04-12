@@ -9,7 +9,7 @@ import apiServerClient from '@/lib/apiServerClient';
 const inputClass = "w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700/30 transition-all";
 
 const PDFDownloadPage = ({
-  recordId = "37wut0fydp3ux2w",
+  pdfUrl = "/pdfs/carrvin-pocket-guide.pdf",
   pageTitle = "The CarrVin Vehicle Security Report",
   pageDescription = "What organised theft networks actually do — and what existing security cannot stop. Enter your details below to download instantly.",
   downloadFileName = "CarrVin-Vehicle-Security-Report.pdf",
@@ -37,36 +37,34 @@ const PDFDownloadPage = ({
   };
 
   const downloadPDF = async () => {
-    try {
-      const PB_URL = import.meta.env.VITE_POCKETBASE_URL;
-      if (!PB_URL) throw new Error("VITE_POCKETBASE_URL is not defined");
-      const res = await fetch(`${PB_URL}/api/collections/resources/records/${recordId}`);
-      if (!res.ok) throw new Error(`Failed to fetch PDF record: ${res.status}`);
-      const record = await res.json();
-      if (!record.file) throw new Error("PDF file missing in record");
-      const pdfUrl = `${PB_URL}/api/files/${record.collectionId}/${record.id}/${record.file}`;
-      const pdfWindow = window.open(pdfUrl, "_blank");
-      if (!pdfWindow || pdfWindow.closed || typeof pdfWindow.closed === 'undefined') {
-        const link = document.createElement('a');
-        link.href = pdfUrl;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => {
-          if (document.hasFocus()) {
-            setShowManualDownload(true);
-            setManualDownloadUrl(pdfUrl);
-          }
-        }, 1500);
-      }
-      return pdfUrl;
-    } catch (err) {
-      console.error("❌ Download error:", err);
-      throw err;
+  try {
+    const fullUrl = pdfUrl.startsWith('http')
+      ? pdfUrl
+      : `${window.location.origin}${pdfUrl}`;
+
+    const pdfWindow = window.open(fullUrl, '_blank');
+
+    if (!pdfWindow || pdfWindow.closed || typeof pdfWindow.closed === 'undefined') {
+      const response = await fetch(fullUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = downloadFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
     }
-  };
+
+    return fullUrl;
+  } catch (err) {
+    console.error('❌ Download error:', err);
+    setShowManualDownload(true);
+    setManualDownloadUrl(pdfUrl.startsWith('http') ? pdfUrl : `${window.location.origin}${pdfUrl}`);
+    throw err;
+  }
+};
 
   const forceDownload = async (pdfUrl, fileName) => {
     try {

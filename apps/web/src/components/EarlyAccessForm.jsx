@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import apiServerClient from '@/lib/apiServerClient';
 import pb from '@/lib/pocketbaseClient';
@@ -10,12 +10,13 @@ import { useToast } from '@/components/ui/use-toast.js';
 const inputClass = "w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 shadow-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/25 transition-all [color-scheme:light]";
 
 const EarlyAccessForm = ({ buttonText = "Join the Founding List" }) => {
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     email: '',
+    car: '',
     name: '',
     city: '',
     country: '',
-    car: '',
     consent: false
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -31,31 +32,43 @@ const EarlyAccessForm = ({ buttonText = "Join the Founding List" }) => {
     setFormMessage(null);
   };
 
+  // Step 1 — capture email immediately
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault();
+    setFormMessage(null);
+    if (!formData.email.trim() || !validateEmail(formData.email)) {
+      setFormMessage({ type: 'error', text: 'Please enter a valid email address.' });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await apiServerClient.fetch('/mailerlite/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          groupId: '179693176552949655'
+        })
+      });
+    } catch (err) {
+      // non-fatal — still move to next step
+    } finally {
+      setIsLoading(false);
+      setStep(2);
+    }
+  };
+
+  // Final submit — update with full data
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormMessage(null);
 
-    if (!formData.email.trim() || !validateEmail(formData.email)) {
-      const msg = 'Please enter a valid email address.';
-      setFormMessage({ type: 'error', text: msg });
-      toast({ variant: "destructive", title: "Validation Error", description: msg });
-      return;
-    }
-    if (!formData.name.trim() || !formData.city.trim() || !formData.country.trim()) {
-      const msg = 'Please fill in all required fields.';
-      setFormMessage({ type: 'error', text: msg });
-      toast({ variant: "destructive", title: "Validation Error", description: msg });
-      return;
-    }
     if (!formData.consent) {
-      const msg = 'You must agree to the privacy policy to continue.';
-      setFormMessage({ type: 'error', text: msg });
-      toast({ variant: "destructive", title: "Privacy Consent", description: msg });
+      setFormMessage({ type: 'error', text: 'You must agree to the privacy policy to continue.' });
       return;
     }
 
     setIsLoading(true);
-    setIsPendingConfirmation(false);
 
     try {
       const response = await apiServerClient.fetch('/mailerlite/subscribe', {
@@ -73,9 +86,7 @@ const EarlyAccessForm = ({ buttonText = "Join the Founding List" }) => {
       });
 
       if (response.status === 409) {
-        const errorMsg = 'This email is already registered. Check your inbox for the confirmation link.';
-        setFormMessage({ type: 'error', text: errorMsg });
-        toast({ variant: "destructive", title: "Already Registered", description: errorMsg });
+        setFormMessage({ type: 'error', text: 'This email is already registered. Check your inbox for the confirmation link.' });
         return;
       }
 
@@ -104,12 +115,12 @@ const EarlyAccessForm = ({ buttonText = "Join the Founding List" }) => {
 
         trackGAEvent('early_access_signup', { email: formData.email, form_source: 'main' });
         setIsPendingConfirmation(true);
-        setFormData({ email: '', name: '', city: '', country: '', car: '', consent: false });
+        setFormData({ email: '', car: '', name: '', city: '', country: '', consent: false });
+        setStep(1);
       } else {
         throw new Error(data.message || 'Submission failed');
       }
     } catch (err) {
-      console.error('Subscription error:', err);
       const genericError = err.message || 'Something went wrong. Please try again.';
       setFormMessage({ type: 'error', text: genericError });
       toast({ variant: "destructive", title: "Subscription Failed", description: genericError });
@@ -131,7 +142,6 @@ const EarlyAccessForm = ({ buttonText = "Join the Founding List" }) => {
         <h3 className="text-2xl font-bold text-gray-900">
           Almost there — your place on the founding list is not confirmed until you verify your email.
         </h3>
-        {/* Added spam note */}
         <p className="text-gray-600">
           Check your inbox now and click the confirmation link. Don't see it? Check your spam folder.
         </p>
@@ -147,101 +157,187 @@ const EarlyAccessForm = ({ buttonText = "Join the Founding List" }) => {
 
   return (
     <div className="w-full max-w-lg mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          placeholder="Full Name *"
-          spellCheck={false}
-          autoComplete="off"
-          className={inputClass}
-        />
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          placeholder="Email Address *"
-          autoComplete="email"
-          className={inputClass}
-        />
-        <div className="grid grid-cols-2 gap-3">
-          <input
-            type="text"
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            placeholder="City *"
-            spellCheck={false}
-            autoComplete="off"
-            className={inputClass}
-          />
-          <input
-            type="text"
-            name="country"
-            value={formData.country}
-            onChange={handleChange}
-            placeholder="Country *"
-            spellCheck={false}
-            autoComplete="off"
-            className={inputClass}
-          />
-        </div>
-        <input
-          type="text"
-          name="car"
-          value={formData.car}
-          onChange={handleChange}
-          placeholder="What car do you drive? (e.g. Toyota Hilux)"
-          spellCheck={false}
-          autoComplete="off"
-          className={inputClass}
-        />
 
-        <div className="flex items-start gap-3 pt-1">
-          <div className="relative flex items-center mt-0.5">
-            <input
-              type="checkbox"
-              name="consent"
-              id="early-access-consent"
-              checked={formData.consent}
-              onChange={handleChange}
-              className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 bg-white checked:border-amber-700 checked:bg-amber-700 transition-all"
-            />
-            <CheckCircle2 className="pointer-events-none absolute h-3.5 w-3.5 left-[3px] top-[3px] text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
-          </div>
-          <label htmlFor="early-access-consent" className="text-sm text-gray-600 text-left leading-tight cursor-pointer select-none">
-            I agree to the{' '}
-            <Link to="/privacy" className="text-amber-600 hover:text-amber-700 underline decoration-1 underline-offset-2 transition-colors">
-              Privacy Policy
-            </Link>{' '}
-            and consent to CarrVin collecting and processing my information for updates and communications.
-          </label>
-        </div>
+      {/* Progress dots */}
+      <div className="flex justify-center gap-2 mb-4">
+        {[1,2,3,4].map(s => (
+          <div key={s} className={`h-1.5 rounded-full transition-all duration-300 ${s === step ? 'w-6 bg-amber-600' : s < step ? 'w-3 bg-amber-400' : 'w-3 bg-gray-300'}`} />
+        ))}
+      </div>
 
-        {formMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 text-sm p-3 rounded-lg border text-red-500 bg-red-500/10 border-red-500/20"
+      <AnimatePresence mode="wait">
+
+        {/* Step 1 — Email */}
+        {step === 1 && (
+          <motion.form
+            key="step1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            onSubmit={handleEmailSubmit}
+            className="space-y-3"
           >
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <p>{formMessage.text}</p>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Your email address *"
+              autoComplete="email"
+              autoFocus
+              className={inputClass}
+            />
+            {formMessage && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-sm p-3 rounded-lg border text-red-500 bg-red-500/10 border-red-500/20">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <p>{formMessage.text}</p>
+              </motion.div>
+            )}
+            <motion.button type="submit" disabled={isLoading} whileTap={{ scale: 0.98 }}
+              className="w-full py-3 bg-gradient-to-r from-amber-700 to-yellow-600 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:shadow-amber-700/20 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2">
+              {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></> : <><span>Get Access</span><ArrowRight className="w-5 h-5" /></>}
+            </motion.button>
+          </motion.form>
+        )}
+
+        {/* Step 2 — Car */}
+        {step === 2 && (
+          <motion.div
+            key="step2"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-3"
+          >
+            <p className="text-sm text-gray-500 text-center">What car do you drive?</p>
+            <input
+              type="text"
+              name="car"
+              value={formData.car}
+              onChange={handleChange}
+              placeholder="e.g. Toyota Hilux, BMW X5"
+              spellCheck={false}
+              autoComplete="off"
+              autoFocus
+              className={inputClass}
+            />
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setStep(3)}
+                className="flex-1 py-3 border-2 border-gray-300 text-gray-600 font-semibold rounded-xl hover:border-gray-400 transition-all">
+                Skip
+              </button>
+              <motion.button type="button" onClick={() => setStep(3)} whileTap={{ scale: 0.98 }}
+                className="flex-2 w-full py-3 bg-gradient-to-r from-amber-700 to-yellow-600 text-white font-bold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                <span>Next</span><ArrowRight className="w-5 h-5" />
+              </motion.button>
+            </div>
           </motion.div>
         )}
 
-        <motion.button
-          type="submit"
-          disabled={isLoading}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full py-3 bg-gradient-to-r from-amber-700 to-yellow-600 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:shadow-amber-700/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
-        >
-          {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></> : buttonText}
-        </motion.button>
-      </form>
+        {/* Step 3 — Name */}
+        {step === 3 && (
+          <motion.div
+            key="step3"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-3"
+          >
+            <p className="text-sm text-gray-500 text-center">What's your name?</p>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Full Name"
+              spellCheck={false}
+              autoComplete="name"
+              autoFocus
+              className={inputClass}
+            />
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setStep(4)}
+                className="flex-1 py-3 border-2 border-gray-300 text-gray-600 font-semibold rounded-xl hover:border-gray-400 transition-all">
+                Skip
+              </button>
+              <motion.button type="button" onClick={() => setStep(4)} whileTap={{ scale: 0.98 }}
+                className="flex-2 w-full py-3 bg-gradient-to-r from-amber-700 to-yellow-600 text-white font-bold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                <span>Next</span><ArrowRight className="w-5 h-5" />
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step 4 — City/Country + Consent + Submit */}
+        {step === 4 && (
+          <motion.form
+            key="step4"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            onSubmit={handleSubmit}
+            className="space-y-3"
+          >
+            <p className="text-sm text-gray-500 text-center">Where are you based?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                placeholder="City"
+                spellCheck={false}
+                autoComplete="off"
+                className={inputClass}
+              />
+              <input
+                type="text"
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                placeholder="Country"
+                spellCheck={false}
+                autoComplete="off"
+                className={inputClass}
+              />
+            </div>
+
+            <div className="flex items-start gap-3 pt-1">
+              <div className="relative flex items-center mt-0.5">
+                <input
+                  type="checkbox"
+                  name="consent"
+                  id="early-access-consent"
+                  checked={formData.consent}
+                  onChange={handleChange}
+                  className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 bg-white checked:border-amber-700 checked:bg-amber-700 transition-all"
+                />
+                <CheckCircle2 className="pointer-events-none absolute h-3.5 w-3.5 left-[3px] top-[3px] text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+              </div>
+              <label htmlFor="early-access-consent" className="text-sm text-gray-600 text-left leading-tight cursor-pointer select-none">
+                I agree to the{' '}
+                <Link to="/privacy" className="text-amber-600 hover:text-amber-700 underline decoration-1 underline-offset-2 transition-colors">
+                  Privacy Policy
+                </Link>{' '}
+                and consent to CarrVin collecting and processing my information.
+              </label>
+            </div>
+
+            {formMessage && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-sm p-3 rounded-lg border text-red-500 bg-red-500/10 border-red-500/20">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <p>{formMessage.text}</p>
+              </motion.div>
+            )}
+
+            <motion.button type="submit" disabled={isLoading} whileTap={{ scale: 0.98 }}
+              className="w-full py-3 bg-gradient-to-r from-amber-700 to-yellow-600 text-white font-bold text-lg rounded-xl hover:shadow-2xl hover:shadow-amber-700/20 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
+              {isLoading ? <><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></> : buttonText}
+            </motion.button>
+          </motion.form>
+        )}
+
+      </AnimatePresence>
     </div>
   );
 };

@@ -8,3 +8,4 @@ export const globalRateLimit = rateLimit({
 	message: { error: 'Too many requests, please try again later' },
 	validate: { trustProxy: false },
 });
+

@@ -7,7 +7,7 @@ const router = express.Router();
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isValidEmail = (email) => emailRegex.test(email);
-const PB = process.env.POCKETBASE_URL || 'http://localhost:8090';
+const PB = process.env.POCKETBASE_URL || 'http://pb.carrvin.com';
 
 logger.info(`PDF routes initialized with PocketBase URL: ${PB}`);
 

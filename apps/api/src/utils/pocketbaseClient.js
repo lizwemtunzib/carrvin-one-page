@@ -5,7 +5,7 @@ import logger from './logger.js';
 
 const POCKETBASE_HOST = (
     process.env.POCKETBASE_URL ||
-    'http://localhost:8090'
+    'http://pb.carrvin.com'
 ).replace(/\/$/, '');
 
 async function waitForHealth({ retries = 10, delayMs = 1000 } = {}) {
@@ -82,3 +82,4 @@ pocketbaseClient.beforeSend = async function (url, options) {
 
 export default pocketbaseClient;
 export { pocketbaseClient };
+

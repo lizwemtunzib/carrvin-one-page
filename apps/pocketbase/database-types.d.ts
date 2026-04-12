@@ -915,3 +915,4 @@ interface Model {
 	markAsNew(): void;
 	markAsNotNew(): void;
 }
+

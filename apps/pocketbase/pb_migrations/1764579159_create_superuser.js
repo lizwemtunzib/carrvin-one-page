@@ -8,3 +8,4 @@ migrate((app) => {
     
     app.save(record)
 })
+

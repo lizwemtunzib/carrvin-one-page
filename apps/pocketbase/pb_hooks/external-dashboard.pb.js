@@ -25,3 +25,4 @@ routerAdd("GET", "/{$}", (e) => {
         throw new NotFoundError("Failed to load dashboard", err)
     }
 })
+

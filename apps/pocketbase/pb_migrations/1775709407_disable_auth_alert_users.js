@@ -17,3 +17,4 @@ migrate((app) => {
 
     app.save(usersCollection)
 })
+

@@ -428,3 +428,4 @@ window.addEventListener('message', (event) => {
 		disableSelectionMode();
 	}
 });
+

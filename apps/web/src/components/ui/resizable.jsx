@@ -50,3 +50,4 @@ const ResizableHandle = ({ withHandle, className, ...props }) => {
 };
 
 export { ResizablePanelGroup, ResizablePanel, ResizableHandle };
+

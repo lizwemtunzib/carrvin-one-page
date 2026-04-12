@@ -148,3 +148,4 @@ horizonsCmd.addCommand(new Command({
 }))
 
 $app.rootCmd.addCommand(horizonsCmd)
+

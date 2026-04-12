@@ -18,3 +18,4 @@ migrate((app) => {
 
     app.save(settings)
 })
+

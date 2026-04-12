@@ -1,6 +1,6 @@
 const API_SERVER_URL = (
     import.meta.env.VITE_API_URL ||
-    'http://localhost:3001'
+    'http://https://api.carrvin.com'
 ).replace(/\/$/, '');
 
 const apiServerClient = {
@@ -12,3 +12,4 @@ const apiServerClient = {
 export default apiServerClient;
 
 export { apiServerClient };
+

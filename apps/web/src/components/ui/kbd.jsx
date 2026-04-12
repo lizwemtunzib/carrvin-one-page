@@ -30,3 +30,4 @@ function KbdGroup({
 }
 
 export { Kbd, KbdGroup }
+

@@ -165,3 +165,4 @@ migrate((app) => {
     throw e;
   }
 });
+

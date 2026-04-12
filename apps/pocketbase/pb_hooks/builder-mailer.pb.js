@@ -38,3 +38,4 @@ onMailerSend((e) => {
         throw new ApiError(500, response.json?.message || 'Failed to send email');
     }
 })
+

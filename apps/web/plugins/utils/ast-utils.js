@@ -277,3 +277,4 @@ export function extractCodeBlocks(filePath, line, column, domContext) {
  * Project root path
  */
 export { VITE_PROJECT_ROOT };
+

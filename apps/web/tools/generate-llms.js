@@ -180,3 +180,4 @@ const isMainModule = import.meta.url === `file://${process.argv[1]}`;
 if (isMainModule) {
 	main();
 }
+

@@ -1,6 +1,6 @@
 const API_SERVER_URL = (
     import.meta.env.VITE_API_URL ||
-    'http://https://api.carrvin.com'
+    'https://api.carrvin.com'
 ).replace(/\/$/, '');
 
 const apiServerClient = {

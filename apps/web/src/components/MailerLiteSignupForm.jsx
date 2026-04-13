@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import apiServerClient from '@/lib/apiServerClient';
 import { useToast } from '@/components/ui/use-toast';
 
-const inputClass = "w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 shadow-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/25 transition-all [color-scheme:light]";
+const inputClass = "w-full px-4 py-3 bg-white border-2 border-gray-400 shadow-sm rounded-xl text-gray-900 placeholder-gray-500 shadow-sm focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/25 transition-all [color-scheme:light]";
 
 const MailerLiteSignupForm = () => {
   const [formData, setFormData] = useState({
@@ -189,7 +189,7 @@ const MailerLiteSignupForm = () => {
               id="mailerlite-consent"
               checked={formData.consent}
               onChange={handleChange}
-              className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 bg-white checked:border-amber-700 checked:bg-amber-700 transition-all"
+              className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-400 shadow-sm bg-white checked:border-amber-700 checked:bg-amber-700 transition-all"
             />
             <CheckCircle2 className="pointer-events-none absolute h-3.5 w-3.5 left-[3px] top-[3px] text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
           </div>

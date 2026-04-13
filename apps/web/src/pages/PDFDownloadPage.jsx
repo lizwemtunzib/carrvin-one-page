@@ -236,7 +236,7 @@ const PDFDownloadPage = ({
                       id="pdf-consent"
                       checked={formData.consent}
                       onChange={handleChange}
-                      className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-300 bg-white checked:border-amber-700 checked:bg-amber-700 transition-all"
+                      className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-gray-400 shadow-sm bg-white checked:border-amber-700 checked:bg-amber-700 transition-all"
                     />
                     <CheckCircle2 className="pointer-events-none absolute h-3.5 w-3.5 left-[3px] top-[3px] text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                   </div>

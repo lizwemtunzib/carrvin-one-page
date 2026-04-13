@@ -11,9 +11,6 @@ const maskApiKey = (key) => {
   return `${key.substring(0, 10)}...${key.substring(key.length - 5)}`;
 };
 
-// ============================================================
-// DEBUG — remove this route once API key issue is resolved
-// ============================================================
 router.get('/debug-env', (req, res) => {
   const key = process.env.MAILERLITE_API_KEY;
   res.json({
@@ -25,9 +22,6 @@ router.get('/debug-env', (req, res) => {
   });
 });
 
-// ============================================================
-// TEST AUTH
-// ============================================================
 router.get('/test-auth', async (req, res) => {
   logger.info('=== MailerLite Auth Test Started ===');
   const apiKey = process.env.MAILERLITE_API_KEY;
@@ -51,14 +45,13 @@ router.post('/subscribe', async (req, res) => {
   const apiKey = process.env.MAILERLITE_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
 
-  const { email, name, city, country, privacy_consent, groupId } = req.body;
+  const { email, name, city, country, car, company, role, privacy_consent, groupId, source } = req.body;
   logger.info(`Processing subscription for: ${email}`);
 
   if (!email || !isValidEmail(email)) return res.status(400).json({ error: 'Valid email is required' });
   if (!privacy_consent) return res.status(400).json({ error: 'Privacy consent is required' });
 
-  // Use groupId from request body, fall back to env default
-  const resolvedGroupId = groupId || process.env.MAILERLITE_GROUP_ID || '17969317655294965';
+  const resolvedGroupId = groupId || process.env.MAILERLITE_GROUP_ID || '179693176552949655';
   logger.info(`Using group ID: ${resolvedGroupId}`);
 
   const headers = {
@@ -67,12 +60,39 @@ router.post('/subscribe', async (req, res) => {
     'Accept': 'application/json'
   };
 
+  // Build fields — only include non-empty values so we don't overwrite existing data with blanks
+  const fields = {};
+  if (name?.trim())    fields.name = name.trim();
+  if (city?.trim())    fields.city = city.trim();
+  if (country?.trim()) fields.country = country.trim();
+  if (car?.trim())     fields.last_name = car.trim(); // store car in last_name or a custom field
+  if (company?.trim()) fields.company = company.trim();
+  if (role?.trim())    fields.role = role.trim();
+
   const checkEndpoint = `https://connect.mailerlite.com/api/subscribers/${encodeURIComponent(email)}`;
+
   try {
     const checkResponse = await axios.get(checkEndpoint, { headers });
+
     if (checkResponse.status === 200 && checkResponse.data?.data?.id) {
-      logger.warn(`Subscriber already exists: ${email}`);
-      return res.status(409).json({ success: false, error: 'This email is already registered.' });
+      // Subscriber exists — UPDATE with new fields
+      logger.info(`Subscriber exists, updating: ${email}`);
+      const subscriberId = checkResponse.data.data.id;
+
+      const updatePayload = { fields, groups: [resolvedGroupId] };
+
+      const updateResponse = await axios.put(
+        `https://connect.mailerlite.com/api/subscribers/${subscriberId}`,
+        updatePayload,
+        { headers }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Subscriber updated successfully.',
+        subscriberId,
+        subscriber: updateResponse.data.data
+      });
     }
   } catch (checkError) {
     if (checkError.response?.status === 404) {
@@ -83,13 +103,10 @@ router.post('/subscribe', async (req, res) => {
     }
   }
 
+  // Create new subscriber
   const payload = {
     email,
-    fields: {
-      name: name || '',
-      city: city || '',
-      country: country || ''
-    },
+    fields,
     groups: [resolvedGroupId],
     status: 'unconfirmed',
     resubscribe: true,

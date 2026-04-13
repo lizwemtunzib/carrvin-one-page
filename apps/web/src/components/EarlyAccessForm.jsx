@@ -47,6 +47,7 @@ const EarlyAccessForm = ({ buttonText = "Join the Founding List" }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
+          privacy_consent: true,
           groupId: '179693176552949655'
         })
       });

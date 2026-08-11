@@ -3,6 +3,9 @@ dist/
 .DS_Store
 app.tar.gz
 
+# generated at build time by apps/web/tools/generate-llms.js
+apps/web/public/llms.txt
+
 .env
 .env.*
 !.env.example

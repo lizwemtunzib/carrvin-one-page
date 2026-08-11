@@ -235,7 +235,7 @@ const HeroSection = () => {
                   </defs>
                 </svg>
                 <img
-                  src="https://horizons-cdn.hostinger.com/b02ff131-21a4-468e-b0f1-523542a0597f/971a29b5ea874bf84bd7294ab09372aa.jpg"
+                  src="/carrvin-logo.jpg"
                   alt="CarrVin Logo"
                   className="h-20 md:h-28 cursor-pointer transition duration-300 hover:opacity-100 hover:scale-105"
                   style={{

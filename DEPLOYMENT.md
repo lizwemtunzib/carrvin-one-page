@@ -1,14 +1,19 @@
 # CarrVin Deployment
 
-This project is no longer tied to Hostinger Horizon paths. Deploy it as three separate services:
+This project is no longer tied to Hostinger Horizon paths. It runs as three separate services:
 
-- Cloudflare Pages: `apps/web`
+- Railway service: `apps/web`
 - Railway service: `apps/api`
 - Railway service: `apps/pocketbase`
 
+Cloudflare sits in front of all three as DNS + proxy only. An earlier draft of this
+document planned `apps/web` for Cloudflare Pages; that is not what is deployed.
+Verified 2026-08-12 — responses from `carrvin.com` carry `x-railway-request-id` and
+`x-railway-edge` headers, which means the origin is Railway, with Cloudflare proxying.
+
 ## Target domains
 
-- `carrvin.com` and `www.carrvin.com` -> Cloudflare Pages
+- `carrvin.com` and `www.carrvin.com` -> Railway web service (proxied by Cloudflare)
 - `api.carrvin.com` -> Railway API service
 - `pb.carrvin.com` -> Railway PocketBase service
 
@@ -51,30 +56,30 @@ Recommended environment variables:
 
 If you later remove the blog sync workflow, `POCKETBASE_DEV_URL` and `POCKETBASE_LIVE_URL` can be retired.
 
-## 3. Frontend on Cloudflare Pages
+## 3. Frontend on Railway
 
-- Project root: `apps/web`
+- Create a Railway service from `apps/web`
 - Build command: `npm run build`
 - Output directory: `dist`
+- Add custom domains: `carrvin.com` and `www.carrvin.com`
 
 Environment variables:
 
 - `VITE_API_URL=https://api.carrvin.com`
 - `VITE_POCKETBASE_URL=https://pb.carrvin.com`
 
-Add custom domains in Cloudflare Pages:
-
-- `carrvin.com`
-- `www.carrvin.com`
+Vite inlines `VITE_*` values at build time, so changing either one requires a
+redeploy, not just a restart.
 
 ## 4. DNS in Cloudflare
 
-Create or update these DNS records after Pages and Railway assign targets:
+Create or update these DNS records, pointing at each Railway service's custom
+domain target:
 
-- `@` -> Cloudflare Pages
-- `www` -> Cloudflare Pages
-- `api` -> Railway custom domain target
-- `pb` -> Railway custom domain target
+- `@` -> Railway web service
+- `www` -> Railway web service
+- `api` -> Railway API service
+- `pb` -> Railway PocketBase service
 
 ## 5. Data migration
 
@@ -86,9 +91,24 @@ Before switching traffic:
 
 ## 6. Security cleanup
 
-This repo currently contains local environment files. After migration:
+Checked 2026-08-12: the repo is clean. Only `.env.example` files are tracked, no
+real `.env` has ever been committed on any branch, and `.gitignore` excludes
+`.env` / `.env.*` while keeping `.env.example`. The earlier warning that "this
+repo currently contains local environment files" no longer applies.
+
+Still worth confirming, since it cannot be verified from the repo alone:
 
 - rotate MailerLite credentials
 - rotate admin credentials
 - rotate `JWT_SECRET`
-- keep real secrets only in Railway and Cloudflare environment settings
+- keep real secrets only in Railway environment settings
+
+## 7. Static assets
+
+Images must be committed under `apps/web/public` and referenced by root-relative
+path (`/carrvin-logo.jpg`). Do not hot-link assets from an external CDN.
+
+The logo and favicon were originally hot-linked from
+`horizons-cdn.hostinger.com`. That CDN was decommissioned along with the
+Hostinger migration, both files started returning 404, and the live site showed
+the `alt` text in place of the logo until they were self-hosted on 2026-08-12.

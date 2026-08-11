@@ -39,7 +39,7 @@ const BenefitsSection = () => {
     <section ref={ref} className="py-16 md:py-20 bg-[#F8F6F0] relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-[0.03] pointer-events-none z-0">
         <img
-          src="https://horizons-cdn.hostinger.com/b02ff131-21a4-468e-b0f1-523542a0597f/971a29b5ea874bf84bd7294ab09372aa.jpg"
+          src="/carrvin-logo.jpg"
           alt=""
           className="w-full h-full object-contain mix-blend-multiply grayscale"
         />

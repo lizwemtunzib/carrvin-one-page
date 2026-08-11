@@ -8,10 +8,32 @@ import syncRouter from './sync.js';
 
 const router = Router();
 
+// Returns the signing secret, or null if it is not configured.
+//
+// There used to be a `|| 'fallback_secret'` default here. That is a published
+// string in a public repo: with JWT_SECRET unset, anyone could mint a token
+// this service would accept. Admin auth now fails CLOSED instead — and only
+// admin auth, so /subscribe, /pdf and /mailerlite keep working regardless.
+function getAuthSecret() {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        console.error('[auth] JWT_SECRET is not set — admin auth is disabled until it is configured.');
+        return null;
+    }
+    return secret;
+}
+
+// Constant-time compare. Hashing first keeps both sides a fixed length, so
+// this leaks neither the value nor its length.
+function safeEqual(a, b) {
+    const ha = crypto.createHash('sha256').update(String(a)).digest();
+    const hb = crypto.createHash('sha256').update(String(b)).digest();
+    return crypto.timingSafeEqual(ha, hb);
+}
+
 // Simple token generator using built-in crypto - no npm install needed
-function generateToken(email) {
+function generateToken(email, secret) {
     const payload = JSON.stringify({ email, exp: Date.now() + 86400000 }); // 24hrs
-    const secret = process.env.JWT_SECRET || 'fallback_secret';
     const hmac = crypto.createHmac('sha256', secret);
     hmac.update(payload);
     const signature = hmac.digest('hex');
@@ -21,19 +43,23 @@ function generateToken(email) {
 
 function verifyToken(token) {
     try {
+        const secret = getAuthSecret();
+        if (!secret) return null;
+
         const [encodedPayload, signature] = token.split('.');
+        if (!encodedPayload || !signature) return null;
+
         const payload = JSON.parse(Buffer.from(encodedPayload, 'base64').toString());
-        
+
         // Check expiry
         if (Date.now() > payload.exp) return null;
-        
+
         // Verify signature
-        const secret = process.env.JWT_SECRET || 'fallback_secret';
         const hmac = crypto.createHmac('sha256', secret);
         hmac.update(JSON.stringify(payload));
         const expectedSignature = hmac.digest('hex');
-        
-        if (signature !== expectedSignature) return null;
+
+        if (!safeEqual(signature, expectedSignature)) return null;
         return payload;
     } catch {
         return null;
@@ -50,17 +76,32 @@ export default () => {
 
     // Admin login route
     router.post('/admin/login', (req, res) => {
-        const { email, password } = req.body;
+        const { email, password } = req.body ?? {};
 
-        if (
-            email === process.env.ADMIN_EMAIL &&
-            password === process.env.ADMIN_PASSWORD
-        ) {
-            const token = generateToken(email);
-            return res.json({ token });
+        const expectedEmail = process.env.ADMIN_EMAIL;
+        const expectedPassword = process.env.ADMIN_PASSWORD;
+        const secret = getAuthSecret();
+
+        // Fail closed when unconfigured. The previous version compared with
+        // `===` against process.env directly, so with ADMIN_EMAIL and
+        // ADMIN_PASSWORD unset a request with no body satisfied
+        // `undefined === undefined` twice over and was issued a token.
+        if (!expectedEmail || !expectedPassword || !secret) {
+            console.error('[auth] admin login is not configured (needs ADMIN_EMAIL, ADMIN_PASSWORD, JWT_SECRET).');
+            return res.status(503).json({ error: 'Admin login is not configured' });
         }
 
-        return res.status(401).json({ error: 'Invalid credentials' });
+        if (
+            typeof email !== 'string' ||
+            typeof password !== 'string' ||
+            !safeEqual(email, expectedEmail) ||
+            !safeEqual(password, expectedPassword)
+        ) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const token = generateToken(email, secret);
+        return res.json({ token });
     });
 
     // Admin token verify route

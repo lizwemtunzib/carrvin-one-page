@@ -71,6 +71,27 @@ Environment variables:
 Vite inlines `VITE_*` values at build time, so changing either one requires a
 redeploy, not just a restart.
 
+### Never set these on the web service
+
+Because Vite inlines them, any `VITE_*` value is **published in the public
+JavaScript bundle** for anyone to read. These names are referenced in the web
+source but must stay unset:
+
+- `VITE_ADMIN_EMAIL`
+- `VITE_ADMIN_PASSWORD`
+- `VITE_MAILERLITE_API_KEY`
+
+Checked 2026-08-12 against the live bundle: none of them are set, so nothing
+is currently exposed. The risk is setting one later to "fix" admin login —
+that would publish the admin password to every visitor. Admin credentials
+belong only on the API service (`ADMIN_EMAIL` / `ADMIN_PASSWORD`), which
+checks them server-side via `POST /admin/login`.
+
+Known gap: `apps/web/src/lib/utils.js` still compares credentials in the
+browser against those `VITE_*` values and mints an unsigned token, rather
+than calling the API. Since the values are unset, admin login simply always
+fails today. Rewiring it to `POST /admin/login` is outstanding work.
+
 ## 4. DNS in Cloudflare
 
 Create or update these DNS records, pointing at each Railway service's custom

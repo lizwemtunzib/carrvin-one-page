@@ -5,6 +5,7 @@ import mailerliteRouter from './mailerlite.js';
 import subscribeRouter from './subscribe.js';
 import pdfRouter from './pdf.js';
 import syncRouter from './sync.js';
+import createAdminBlogRouter from './admin-blog.js';
 
 const router = Router();
 
@@ -66,6 +67,19 @@ function verifyToken(token) {
     }
 }
 
+// Express middleware form of verifyToken, for routes that require an admin.
+function requireAdmin(req, res, next) {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!token) return res.status(401).json({ error: 'No token' });
+
+    const decoded = verifyToken(token);
+    if (!decoded) return res.status(401).json({ error: 'Invalid or expired token' });
+
+    req.admin = decoded;
+    return next();
+}
+
 export default () => {
     router.get('/health', healthCheck);
     
@@ -73,6 +87,7 @@ export default () => {
     router.use('/subscribe', subscribeRouter);
     router.use('/pdf', pdfRouter);
     router.use('/sync', syncRouter);
+    router.use('/admin/blog', createAdminBlogRouter(requireAdmin));
 
     // Admin login route
     router.post('/admin/login', (req, res) => {

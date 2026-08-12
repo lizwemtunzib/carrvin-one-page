@@ -1,6 +1,29 @@
 import pb from '@/lib/pocketbaseClient.js';
 import apiServerClient from '@/lib/apiServerClient.js';
 
+// Admin writes go through the API, which holds the PocketBase superuser
+// session. Writing straight from the browser cannot work: blog_posts requires
+// `@request.auth.id != ""` for create/update/delete and the browser has no
+// PocketBase session, so every write here was being rejected.
+//
+// Public reads below still talk to PocketBase directly — listRule/viewRule are
+// open, and that path already works.
+const adminFetch = async (path, options = {}) => {
+  const token = localStorage.getItem('admin_token');
+  return apiServerClient.fetch(path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+};
+
+// The API writes to the PocketBase instance the site actually serves, so a
+// separate dev -> live sync step is no longer part of the save path.
+const SAVED_DIRECTLY = { success: true, message: 'Saved to the live database.' };
+
 export const generateSlug = (title) => {
   if (!title) return '';
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -32,11 +55,13 @@ export const getAllBlogPosts = async () => {
 
 export const getAllBlogPostsAdmin = async () => {
   try {
-    const records = await pb.collection('blog_posts').getFullList({
-      sort: '-created',
-      $autoCancel: false
-    });
-    return records || [];
+    const res = await adminFetch('/admin/blog');
+    if (!res.ok) {
+      console.error('blogService: Error fetching all posts:', res.status);
+      return [];
+    }
+    const data = await res.json();
+    return data.items || [];
   } catch (error) {
     console.error('blogService: Error fetching all posts:', error);
     return [];
@@ -65,25 +90,17 @@ export const createBlogPost = async (postData) => {
       counter++;
     }
     
-    const record = await pb.collection('blog_posts').create({ ...postData, slug }, { 
-      $autoCancel: false 
+    const res = await adminFetch('/admin/blog', {
+      method: 'POST',
+      body: JSON.stringify({ ...postData, slug }),
     });
-
-    // Attempt to sync to Live
-    let syncResult = { success: false, message: 'Sync not attempted' };
-    try {
-      const res = await apiServerClient.fetch('/sync/blog-posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create', postData: record })
-      });
-      syncResult = await res.json();
-    } catch (syncErr) {
-      console.error('blogService: Error syncing create:', syncErr);
-      syncResult = { success: false, message: syncErr.message || 'Network error during sync' };
+    if (!res.ok) {
+      console.error('blogService: Error creating post:', res.status);
+      return null;
     }
 
-    return { record, syncResult };
+    const { record } = await res.json();
+    return { record, syncResult: SAVED_DIRECTLY };
   } catch (error) {
     console.error('blogService: Error creating post:', error);
     return null;
@@ -103,25 +120,17 @@ export const updateBlogPost = async (id, postData) => {
       }
     }
     
-    const record = await pb.collection('blog_posts').update(id, { ...postData, slug }, { 
-      $autoCancel: false 
+    const res = await adminFetch(`/admin/blog/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ ...postData, slug }),
     });
-
-    // Attempt to sync to Live
-    let syncResult = { success: false, message: 'Sync not attempted' };
-    try {
-      const res = await apiServerClient.fetch('/sync/blog-posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update', postId: id, postData: record })
-      });
-      syncResult = await res.json();
-    } catch (syncErr) {
-      console.error('blogService: Error syncing update:', syncErr);
-      syncResult = { success: false, message: syncErr.message || 'Network error during sync' };
+    if (!res.ok) {
+      console.error('blogService: Error updating post:', res.status);
+      return null;
     }
 
-    return { record, syncResult };
+    const { record } = await res.json();
+    return { record, syncResult: SAVED_DIRECTLY };
   } catch (error) {
     console.error('blogService: Error updating post:', error);
     return null;
@@ -130,23 +139,13 @@ export const updateBlogPost = async (id, postData) => {
 
 export const deleteBlogPost = async (id) => {
   try {
-    await pb.collection('blog_posts').delete(id, { $autoCancel: false });
-
-    // Attempt to sync to Live
-    let syncResult = { success: false, message: 'Sync not attempted' };
-    try {
-      const res = await apiServerClient.fetch('/sync/blog-posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', postId: id })
-      });
-      syncResult = await res.json();
-    } catch (syncErr) {
-      console.error('blogService: Error syncing delete:', syncErr);
-      syncResult = { success: false, message: syncErr.message || 'Network error during sync' };
+    const res = await adminFetch(`/admin/blog/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      console.error('blogService: Error deleting post:', res.status);
+      return { success: false };
     }
 
-    return { success: true, syncResult };
+    return { success: true, syncResult: SAVED_DIRECTLY };
   } catch (error) {
     console.error('blogService: Error deleting post:', error);
     return { success: false };

@@ -6,6 +6,7 @@ import subscribeRouter from './subscribe.js';
 import pdfRouter from './pdf.js';
 import syncRouter from './sync.js';
 import createAdminBlogRouter from './admin-blog.js';
+import logger from '../utils/logger.js';
 
 const router = Router();
 
@@ -93,8 +94,12 @@ export default () => {
     router.post('/admin/login', (req, res) => {
         const { email, password } = req.body ?? {};
 
-        const expectedEmail = process.env.ADMIN_EMAIL;
-        const expectedPassword = process.env.ADMIN_PASSWORD;
+        // Trimmed because a trailing space or newline pasted into a dashboard
+        // env var is never intentional, and is invisible when you look at it.
+        const rawEmail = process.env.ADMIN_EMAIL;
+        const rawPassword = process.env.ADMIN_PASSWORD;
+        const expectedEmail = (rawEmail || '').trim();
+        const expectedPassword = (rawPassword || '').trim();
         const secret = getAuthSecret();
 
         // Fail closed when unconfigured. The previous version compared with
@@ -106,16 +111,36 @@ export default () => {
             return res.status(503).json({ error: 'Admin login is not configured' });
         }
 
-        if (
-            typeof email !== 'string' ||
-            typeof password !== 'string' ||
-            !safeEqual(email, expectedEmail) ||
-            !safeEqual(password, expectedPassword)
-        ) {
+        if (typeof email !== 'string' || typeof password !== 'string') {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        const token = generateToken(email, secret);
+        // Email is compared case- and whitespace-insensitively (neither is ever
+        // a meaningful difference in an address). The password is compared
+        // exactly, except for whitespace around the STORED value.
+        const emailOk = safeEqual(email.trim().toLowerCase(), expectedEmail.toLowerCase());
+        const passwordOk = safeEqual(password, expectedPassword);
+
+        if (!emailOk || !passwordOk) {
+            // Logged server-side only — the HTTP response must never reveal
+            // which field was wrong. These land in the Railway service logs and
+            // are what make an otherwise invisible mismatch diagnosable.
+            logger.warn(
+                `[auth] admin login rejected — email matched: ${emailOk}, password matched: ${passwordOk}`,
+            );
+            if (rawEmail !== expectedEmail) {
+                logger.warn('[auth] ADMIN_EMAIL has surrounding whitespace in the environment (trimmed before comparing)');
+            }
+            if (rawPassword !== expectedPassword) {
+                logger.warn('[auth] ADMIN_PASSWORD has surrounding whitespace in the environment (trimmed before comparing)');
+            }
+            if (!passwordOk && password !== password.trim()) {
+                logger.warn('[auth] the submitted password has surrounding whitespace');
+            }
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const token = generateToken(expectedEmail, secret);
         return res.json({ token });
     });
 

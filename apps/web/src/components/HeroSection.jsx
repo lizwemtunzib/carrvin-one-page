@@ -198,12 +198,17 @@ const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative flex justify-center items-start mb-4"
           >
-            {/* Stamp — desktop only, pushed further left */}
+            {/* Stamp — desktop only, sits to the left of the logo.
+                The offset is relative to the max-w-4xl wrapper, not the
+                viewport, and this section is overflow-hidden — so the old
+                fixed left-[-130px] silently clipped the 140px stamp on every
+                width below ~1156px. Only go deeply negative once there is
+                room for it. */}
             <motion.div
               initial={{ opacity: 0, rotate: 110, scale: 0.7 }}
               animate={{ opacity: 1, rotate: 0, scale: 1 }}
               transition={{ duration: 0.7, delay: 0.5, ease: 'easeOut' }}
-              className="absolute left-[-130px] top-6 hidden md:block"
+              className="absolute top-6 hidden md:block md:left-2 lg:left-[-40px] xl:left-[-130px]"
             >
               <button
                 type="button"
